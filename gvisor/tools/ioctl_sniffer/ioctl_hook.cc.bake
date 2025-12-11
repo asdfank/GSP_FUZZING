@@ -1,0 +1,268 @@
+// Copyright 2024 The gVisor Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#define _GNU_SOURCE 1  // Needed for access to RTLD_NEXT
+#include "tools/ioctl_sniffer/ioctl_hook.h"
+
+#include <asm/ioctl.h>
+#include <dlfcn.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "tools/ioctl_sniffer/ioctl.pb.h"
+#include "tools/ioctl_sniffer/sniffer_bridge.h"
+
+using gvisor::Ioctl;
+// 和 sniffer.go/test_inject.c 保持一致的 24 字节种子头
+struct SeedHeader {
+  uint32_t magic;    // 0x4E564944 ("NVID")
+  uint64_t request;  // ioctl request
+  uint32_t ret;      // 0 (固定)
+  uint32_t subclass; // control cmd 或 alloc hClass
+  uint32_t arg_size; // body (params) 大小
+}__attribute__((packed));
+// 确保它确实是 24 字节 (C++11)
+static_assert(sizeof(SeedHeader) == 24, "SeedHeader size must be 24 bytes");
+
+// NVOS54 结构体定义 (从你 hook 的代码中复制)
+struct NVOS54_PARAMETERS {
+  uint32_t hClient;     // offset 0
+  uint32_t hObject;     // 4
+  uint32_t cmd;         // 8
+  uint32_t flags;       // 12
+  void* params;         // 16 (pointer, 8B)
+  uint32_t paramsSize;  // 24
+  uint32_t status;      // 28
+};
+// NV_ESC_RM_CONTROL 的 NR (从你 hook 的代码中复制)
+const uint32_t NV_ESC_RM_CONTROL_NR = 0x2a;
+
+// 全局/线程局部的静态变量，用于存储加载的种子
+// (使用 thread_local 避免多线程应用冲突)
+thread_local bool g_seed_loaded = false;
+thread_local SeedHeader g_seed_hdr;
+thread_local std::vector<char> g_seed_body;
+
+libc_ioctl libc_ioctl_handle = nullptr;
+
+void init_libc_ioctl_handle() {
+  if (libc_ioctl_handle) {
+    return;
+  }
+
+  libc_ioctl_handle = (libc_ioctl)dlsym(RTLD_NEXT, "ioctl");
+  if (!libc_ioctl_handle) {
+    std::cerr << "Failed to hook ioctl: " << dlerror() << "\n";
+    exit(1);
+  }
+}
+
+/**
+ * @brief 尝试加载一次种子, 并在匹配时注入 payload
+ * @param file_name 当前 ioctl 的 fd 路径
+ * @param request   当前 ioctl 的 request
+ * @param argp      指向 NVOS54_PARAMETERS 的指针
+ * @param arg_size  argp 的大小 (应为 sizeof(NVOS54_PARAMETERS))
+ */
+static void maybe_inject_payload(const char* file_name,
+                                 unsigned long request,
+                                 void* argp,
+                                 uint32_t arg_size) {
+  
+  // --- 1. 过滤：只处理 /dev/nvidiactl 的 RM_CONTROL ---
+  // (和你在 hook 中已有的逻辑一致)
+  if (!absl::StartsWith(file_name, "/dev/nvidiactl")) return;
+  if (_IOC_NR(request) != NV_ESC_RM_CONTROL_NR) return;
+  if (arg_size != sizeof(NVOS54_PARAMETERS) || argp == nullptr) return;
+
+  // --- 2. 加载种子 (只执行一次) ---
+  if (!g_seed_loaded) {
+    g_seed_loaded = true; // 标记为“已尝试加载”，无论成功失败
+    const char* seed_path = getenv("NVIDIA_INJECT_SEED");
+    if (!seed_path || seed_path[0] == '\0') {
+      // 没有设置环境变量，直接返回，后续不再检查
+      return; 
+    }
+
+    FILE* f = fopen(seed_path, "rb");
+    if (!f) {
+      // (使用 cerr 打印到宿主机的 stderr，便于调试)
+      std::cerr << "[IOCTL_HOOK] 错误: 无法打开种子文件 " << seed_path << std::endl;
+      return;
+    }
+
+    // 读取 24 字节头部
+    if (fread(&g_seed_hdr, sizeof(g_seed_hdr), 1, f) != 1) {
+      std::cerr << "[IOCTL_HOOK] 错误: 读取种子头部失败 " << seed_path << std::endl;
+      fclose(f);
+      return;
+    }
+
+    // 验证 Magic
+    if (g_seed_hdr.magic != 0x4E564944) { // "NVID"
+      std::cerr << "[IOCTL_HOOK] 错误: 种子 Magic 不匹配!" << std::endl;
+      fclose(f);
+      return;
+    }
+
+    // 读取 body
+    if (g_seed_hdr.arg_size > 0) {
+      g_seed_body.resize(g_seed_hdr.arg_size);
+      if (fread(g_seed_body.data(), 1, g_seed_hdr.arg_size, f) != g_seed_hdr.arg_size) {
+        std::cerr << "[IOCTL_HOOK] 错误: 读取种子 body 失败 (大小: " << g_seed_hdr.arg_size << ")" << std::endl;
+        g_seed_body.clear(); // 加载失败
+      }
+    }
+    fclose(f);
+    
+    std::cerr << "[IOCTL_HOOK] 成功: 加载种子 " << seed_path 
+              << ", req=0x" << std::hex << g_seed_hdr.request 
+              << ", sub=0x" << g_seed_hdr.subclass
+              << ", size=" << std::dec << g_seed_hdr.arg_size << std::endl;
+  }
+
+  // --- 3. 注入逻辑 ---
+  if (g_seed_body.empty() && g_seed_hdr.arg_size > 0) {
+      // 种子加载失败或为空
+      return; 
+  }
+
+  NVOS54_PARAMETERS* w = reinterpret_cast<NVOS54_PARAMETERS*>(argp);
+
+  // 匹配 Request 和 Subclass (cmd)
+  if (g_seed_hdr.request != request || g_seed_hdr.subclass != w->cmd) {
+    // 不是这个种子对应的 ioctl，放行
+    return;
+  }
+
+  // 检查目标缓冲区
+  if (w->params == nullptr) {
+    std::cerr << "[IOCTL_HOOK] 匹配成功 (sub=0x" << std::hex << w->cmd 
+              << "), 但 params 为 NULL，跳过注入。" << std::endl;
+    return;
+  }
+
+  // 检查大小 (PoC 阶段：如果种子比原始 buffer 大，就只拷贝 buffer 那么多)
+  size_t bytes_to_copy = g_seed_hdr.arg_size;
+  if (bytes_to_copy > w->paramsSize) {
+    std::cerr << "[IOCTL_HOOK] 警告: 种子大小 (" << bytes_to_copy 
+              << ") 大于原始 paramsSize (" << w->paramsSize 
+              << ")。将只拷贝 " << w->paramsSize << " 字节。" << std::endl;
+    bytes_to_copy = w->paramsSize; 
+  }
+
+  std::cerr << "[IOCTL_HOOK] ***** 注入开始 *****" << std::endl
+            << "[IOCTL_HOOK] 匹配成功: req=0x" << std::hex << request 
+            << ", sub=0x" << w->cmd << std::endl
+            << "[IOCTL_HOOK] 正在覆盖 params (地址: " << w->params 
+            << ")，使用 " << std::dec << bytes_to_copy << " 字节的种子数据。" 
+            << std::endl;
+
+  // [!!! 核心注入动作 !!!]
+  memcpy(w->params, g_seed_body.data(), bytes_to_copy);
+  //std::vector<uint8_t> modified_payload(bytes_to_copy, 0xAA);  // 这里使用0xAA的模式代替
+  //memcpy(w->params, modified_payload.data(), bytes_to_copy);
+
+  // (可选，但推荐) 同时更新 paramsSize，告诉驱动我们传入了多大的数据
+  // w->paramsSize = bytes_to_copy; 
+  
+  std::cerr << "[IOCTL_HOOK] ***** 注入完成 *****" << std::endl;
+}
+
+extern "C" {
+
+int ioctl(int fd, unsigned long request, void *argp) {
+  if (!libc_ioctl_handle) {
+    init_libc_ioctl_handle();
+  }
+
+  // 1. 先resolve fd_path
+  char file_name[PATH_MAX + 1];
+  std::string fd_link = absl::StrCat("/proc/self/fd/", fd);
+  ssize_t n = readlink(fd_link.c_str(), file_name, sizeof(file_name) - 1);
+  if (n < 0) {
+    return libc_ioctl_handle(fd, request, argp);
+  }
+  file_name[n] = '\0';
+
+  // 非NVIDIA直接放行
+  if (!absl::StartsWith(file_name, "/dev/nvidia")) {
+    return libc_ioctl_handle(fd, request, argp);
+  }
+
+  // 2. 计算arg_size (非UVM)
+  bool is_uvm = absl::StartsWith(file_name, "/dev/nvidia-uvm");
+  uint32_t arg_size = is_uvm ? 0 : _IOC_SIZE(request);
+
+  // 3. 复制pre_arg_data (只在非UVM且合理size)
+  std::vector<char> pre_arg_data;
+  if (arg_size > 0 && arg_size <= 1048576 && argp != nullptr) {  // <1MB
+    pre_arg_data.resize(arg_size);
+    memcpy(pre_arg_data.data(), argp, arg_size);
+  }
+
+  // 4. 组pre proto
+  Ioctl pre_info;
+  pre_info.set_fd_path(file_name);
+  pre_info.set_request(request);
+  pre_info.set_ret(-1);  // pre标识
+  if (!pre_arg_data.empty()) {
+    pre_info.set_arg_data(pre_arg_data.data(), pre_arg_data.size());
+  }
+
+  // 5. CONTROL: 抓pre_params + set_subclass
+  if (absl::StartsWith(file_name, "/dev/nvidiactl") &&
+      _IOC_NR(request) == NV_ESC_RM_CONTROL_NR &&
+      pre_arg_data.size() == sizeof(NVOS54_PARAMETERS)) {
+    NVOS54_PARAMETERS* w = reinterpret_cast<NVOS54_PARAMETERS*>(pre_arg_data.data());
+    pre_info.set_subclass(w->cmd);  // 从wrapper取cmd
+    if (w->params != nullptr && w->paramsSize > 0 && w->paramsSize <= 1048576) {
+      std::vector<char> pre_params_data(w->paramsSize);
+      memcpy(pre_params_data.data(), w->params, w->paramsSize);
+      pre_info.set_params_data(pre_params_data.data(), pre_params_data.size());
+    }
+  }
+  WriteIoctlProto(pre_info);
+
+  // [!!! 新增注入步骤 !!!]
+  // 在日志记录之后、真实调用之前，尝试用种子覆盖 argp
+  maybe_inject_payload(file_name, request, argp, arg_size);
+  // 6. 真实call
+  int ret = libc_ioctl_handle(fd, request, argp);
+  
+
+  // 7. post proto (可选，调试)
+  Ioctl post_info;
+  post_info.set_fd_path(file_name);
+  post_info.set_request(request);
+  post_info.set_ret(ret);
+  post_info.set_arg_data(argp, arg_size);
+  // ... (类似post params, 无需set_subclass)
+  WriteIoctlProto(post_info);
+
+  return ret;
+}
+
+}  // extern "C"

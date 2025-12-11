@@ -1,0 +1,51 @@
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //tools/ioctl_sniffer:run_sniffer up-to-date:
+  bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer
+INFO: Elapsed time: 0.069s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer <args omitted>
+[HOOK] Config: SAMPLES_CMD=0x2080a60b READING_CMD=0x2080a618
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Thu Nov 20 16:35:20 2025
+Driver Version                            : 575.57.08
+CUDA Version                              : 12.9
+
+Attached GPUs                             : 1
+GPU 00000000:01:00.0
+    GPU Power Readings
+        Average Power Draw                : 4.66 W
+        Instantaneous Power Draw          : 4.66 W
+        Current Power Limit               : 425.00 W
+        Requested Power Limit             : 425.00 W
+        Default Power Limit               : 425.00 W
+        Min Power Limit                   : 150.00 W
+        Max Power Limit                   : 600.00 W
+    Power Samples
+[HOOK] Captured SAMPLES cmd=0x2080a60b, size=1928 bytes (snapshot stored)
+        Duration                          : 117.97 sec
+        Number of Samples                 : 119
+        Max                               : 4.93 W
+        Min                               : 4.08 W
+        Avg                               : 4.53 W
+    GPU Memory Power Readings 
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+    Module Power Readings
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+        Current Power Limit               : N/A
+        Requested Power Limit             : N/A
+        Default Power Limit               : N/A
+        Min Power Limit                   : N/A
+        Max Power Limit                   : N/A
+

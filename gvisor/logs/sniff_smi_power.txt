@@ -1,0 +1,61 @@
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //tools/ioctl_sniffer:run_sniffer up-to-date:
+  bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer
+INFO: Elapsed time: 0.077s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer <args omitted>
+[Hook Alloc Hex] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x0 pAllocParms=0
+[Hook Alloc Hex] 51 00 d0 c1 51 00 d0 c1 10 00 5a a5 40 c6 00 00 | b8 d8 43 ac ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0xc640 pAllocParms=0
+[Hook Alloc Hex] 51 00 d0 c1 51 00 d0 c1 20 00 5a a5 80 00 00 00 | e0 d5 43 ac ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x80 pAllocParms=0
+[Hook Alloc Hex] 51 00 d0 c1 20 00 5a a5 30 00 5a a5 80 20 00 00 | 7c d4 43 ac ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x2080 pAllocParms=0
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Wed Nov 26 16:12:47 2025
+Driver Version                            : 575.57.08
+CUDA Version                              : 12.9
+[Hook Alloc Hex] 51 00 d0 c1 30 00 5a a5 40 00 5a a5 81 20 00 00 | 8c ca 43 ac ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x2081 pAllocParms=0
+
+Attached GPUs                             : 1
+GPU 00000000:01:00.0
+    GPU Power Readings
+[Hook Alloc Hex] 51 00 d0 c1 30 00 5a a5 50 00 5a a5 de 00 00 00 | 58 d1 43 ac ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0xde pAllocParms=0
+        Average Power Draw                : 4.01 W
+        Instantaneous Power Draw          : 4.09 W
+        Current Power Limit               : 425.00 W
+        Requested Power Limit             : 425.00 W
+        Default Power Limit               : 425.00 W
+        Min Power Limit                   : 150.00 W
+        Max Power Limit                   : 600.00 W
+    Power Samples
+        Duration                          : 117.96 sec
+        Number of Samples                 : 119
+        Max                               : 4.69 W
+        Min                               : 3.74 W
+        Avg                               : 4.05 W
+    GPU Memory Power Readings 
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+    Module Power Readings
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+        Current Power Limit               : N/A
+        Requested Power Limit             : N/A
+        Default Power Limit               : N/A
+        Min Power Limit                   : N/A
+        Max Power Limit                   : N/A
+

@@ -1,0 +1,33 @@
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //tools/ioctl_sniffer:run_sniffer up-to-date:
+  bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer
+INFO: Elapsed time: 0.088s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer <args omitted>
+xvfb-run: usage error: need a command to run
+Usage: xvfb-run [OPTION ...] COMMAND
+Run COMMAND (usually an X client) in a virtual X server environment.
+Options:
+-a        --auto-servernum          try to get a free server number, starting at
+                                    --server-num
+-e FILE   --error-file=FILE         file used to store xauth errors and Xvfb
+                                    output (default: /dev/null)
+-f FILE   --auth-file=FILE          file used to store auth cookie
+                                    (default: ./.Xauthority)
+-h        --help                    display this usage message and exit
+-n NUM    --server-num=NUM          server number to use (default: 99)
+-l        --listen-tcp              enable TCP port listening in the X server
+-p PROTO  --xauth-protocol=PROTO    X authority protocol name to use
+                                    (default: xauth command's default)
+-s ARGS   --server-args=ARGS        arguments (other than server number and
+                                    "-nolisten tcp") to pass to the Xvfb server
+                                    (default: "-screen")
+W1126 16:12:49.501401  306500 run_sniffer.go:151] command exited with error: exit status 2

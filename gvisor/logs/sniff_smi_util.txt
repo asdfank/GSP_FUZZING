@@ -1,0 +1,79 @@
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //tools/ioctl_sniffer:run_sniffer up-to-date:
+  bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer
+INFO: Elapsed time: 0.074s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer <args omitted>
+[Hook Alloc Hex] 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x0 pAllocParms=0
+[Hook Alloc Hex] 50 00 d0 c1 50 00 d0 c1 10 00 5a a5 40 c6 00 00 | 58 95 e6 98 ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0xc640 pAllocParms=0
+[Hook Alloc Hex] 50 00 d0 c1 50 00 d0 c1 20 00 5a a5 80 00 00 00 | 80 92 e6 98 ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x80 pAllocParms=0
+[Hook Alloc Hex] 50 00 d0 c1 20 00 5a a5 30 00 5a a5 80 20 00 00 | 1c 91 e6 98 ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x2080 pAllocParms=0
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Wed Nov 26 16:12:45 2025
+Driver Version                            : 575.57.08
+CUDA Version                              : 12.9
+[Hook Alloc Hex] 50 00 d0 c1 30 00 5a a5 40 00 5a a5 81 20 00 00 | 2c 87 e6 98 ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0x2081 pAllocParms=0
+
+Attached GPUs                             : 1
+GPU 00000000:01:00.0
+    Utilization
+[Hook Alloc Hex] 50 00 d0 c1 30 00 5a a5 50 00 5a a5 de 00 00 00 | d8 8f e6 98 ff 7f 00 00 | 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[Hook Alloc] hClass=0xde pAllocParms=0
+        GPU                               : 0 %
+        Memory                            : 0 %
+        Encoder                           : 0 %
+        Decoder                           : 0 %
+        JPEG                              : 0 %
+        OFA                               : 0 %
+    GPU Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    Memory Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    ENC Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    DEC Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    JPG Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+    OFA Utilization Samples
+        Duration                          : 14.00 sec
+        Number of Samples                 : 71
+        Max                               : 0 %
+        Min                               : 0 %
+        Avg                               : 0 %
+

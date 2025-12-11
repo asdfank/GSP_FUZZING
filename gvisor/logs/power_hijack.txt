@@ -1,0 +1,56 @@
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+Analyzing: target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //tools/ioctl_sniffer:run_sniffer (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //tools/ioctl_sniffer:run_sniffer up-to-date:
+  bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer
+INFO: Elapsed time: 0.083s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/ioctl_sniffer/run_sniffer_/run_sniffer <args omitted>
+[HOOK] Victim cmd from env NVIDIA_VICTIM_CMD = 0x2080a60b
+[HOOK] Payload seed loaded from /home/lyh/Desktop/gvisor/seeds/smi_clocks/smi_clocks_000025.bin | cmd=0x20809064 size=520 bytes
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Thu Nov 20 12:41:59 2025
+Driver Version                            : 575.57.08
+CUDA Version                              : 12.9
+
+Attached GPUs                             : 1
+GPU 00000000:01:00.0
+    GPU Power Readings
+        Average Power Draw                : 4.05 W
+        Instantaneous Power Draw          : 4.08 W
+        Current Power Limit               : 425.00 W
+        Requested Power Limit             : 425.00 W
+        Default Power Limit               : 425.00 W
+        Min Power Limit                   : 150.00 W
+        Max Power Limit                   : 600.00 W
+    Power Samples
+
+[HOOK] >>> HIJACK TRIGGERED! <<<
+[HOOK] fd=/dev/nvidiactl | request=0xc020462a
+[HOOK] Victim cmd: 0x2080a60b -> Payload cmd: 0x20809064
+[HOOK] Old paramsSize=1928 New paramsSize=520
+        Duration                          : Not Found
+        Number of Samples                 : Not Found
+        Max                               : Not Found
+        Min                               : Not Found
+        Avg                               : Not Found
+    GPU Memory Power Readings 
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+    Module Power Readings
+        Average Power Draw                : N/A
+        Instantaneous Power Draw          : N/A
+        Current Power Limit               : N/A
+        Requested Power Limit             : N/A
+        Default Power Limit               : N/A
+        Min Power Limit                   : N/A
+        Max Power Limit                   : N/A
+
