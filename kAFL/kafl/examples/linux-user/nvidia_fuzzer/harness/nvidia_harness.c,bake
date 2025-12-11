@@ -1,0 +1,451 @@
+/*
+ * nvidia_harness.c
+ * kAFL Fuzzing Harness for /dev/nvidiactl
+ *
+ * 基于 inject_all.sh 和 test_inject.c 的逻辑构建，并根据
+ * 用户反馈（2025-11-06）进行了关键的健壮性修复。
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <inttypes.h> // For PRIx64
+#include <assert.h>   // For _Static_assert
+#include <stdarg.h>   // For va_list
+#include <time.h>     // For time_t
+#include <sys/wait.h>  // 为 system() 添加，如果未有
+#ifdef __linux__
+#include <linux/mman.h> // For MAP_HUGETLB etc.
+#endif
+
+/* nyx / kAFL agent API headers */
+#include "nyx_api.h"
+#include "nyx_agent.h"
+
+/* 确保 kAFL API 存在 */
+#ifndef HYPERCALL_KAFL_GET_PAYLOAD
+#error "nyx_api.h missing expected defines - ensure include path is correct"
+#endif
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+#ifndef HYPERCALL_KAFL_RANGE_SUBMIT
+#define HYPERCALL_KAFL_RANGE_SUBMIT 29
+#endif
+
+#define MAX_PT_RANGES 4
+#define MAX_CONTROL_PAYLOAD_SIZE (8u << 20) // 8MB 硬上限
+
+#ifndef SEED_HDR_T_DEFINED
+#define SEED_HDR_T_DEFINED
+#include <inttypes.h>   // for PRIx64
+#include <stddef.h>     // for offsetof
+
+// ---- 种子头定义：确保和 sniffer 完全一致 ----
+#pragma pack(push, 1)
+typedef struct {
+    uint32_t magic;      // "NVID" -> 0x4E564944
+    uint64_t request;    // ioctl req (unsigned long)
+    uint32_t ret;        // 预期 0
+    uint32_t subclass;   // CONTROL 子命令或 ALLOC class 的 hint
+    uint32_t arg_size;   // 参数区长度（若你的 sniffer 用的是 64-bit，请把它改为 uint64_t 并同步 sizeof 校验）
+} seed_hdr_t;
+#pragma pack(pop)
+#define SEED_HDR_SIZE ((size_t)sizeof(seed_hdr_t))
+#endif
+
+/**
+ * @brief 将带 UTC 时间戳的格式化日志消息追加到
+ * /var/log/nvidia_harness.log, 失败则回退到 /tmp/nvidia_harness.log
+ */
+void harness_log(const char *format, ...) {
+    FILE *log_file = fopen("/sharedir/log/nvidia_harness.log", "a");
+    if (!log_file) {
+        log_file = fopen("/tmp/nvidia_harness.log", "a");
+    }
+    if (!log_file) {
+        return;
+    }
+
+    // 1. 写入 UTC 时间戳
+    char time_buf[64];
+    time_t now = time(NULL);
+    struct tm tm_info;
+    gmtime_r(&now, &tm_info);
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", &tm_info);
+    fprintf(log_file, "[%s] ", time_buf);
+
+    // 2. 写入用户提供的日志消息
+    va_list args;
+    va_start(args, format);
+    vfprintf(log_file, format, args);
+    va_end(args);
+
+    // 3. 写入换行符
+    fprintf(log_file, "\n");
+
+    // 4. 立即刷新缓冲区
+    fflush(log_file);
+
+    // 5. 关闭文件
+    fclose(log_file);
+}
+
+// CONTROL: 32B (与 0xc020462a 对齐)
+typedef struct {
+    uint32_t hClient;
+    uint32_t hObject;
+    uint32_t cmd;
+    uint32_t flags;
+    uintptr_t params; // 8B
+    uint32_t paramsSize; // 4B
+    uint32_t status; // 4B
+} NVOS54_PARAMETERS;
+_Static_assert(sizeof(NVOS54_PARAMETERS) == 32, "NVOS54 size mismatch");
+
+// ALLOC: 48B (与 0xc030462b 对齐)
+typedef struct {
+    uint32_t hRoot;
+    uint32_t hObjectParent;
+    uint32_t hObjectNew;
+    uint32_t hClass;
+    uint64_t pRightsRequested; // 8B
+    uint64_t pAllocParms; // 8B
+    uint32_t flags;
+    uint32_t status;
+    uint64_t padding; // 8B padding 到 48B
+} NVOS64_PARAMETERS;
+_Static_assert(sizeof(NVOS64_PARAMETERS) == 48, "NVOS64 size mismatch");
+
+#define NV_ESC_RM_ALLOC 0xc030462bULL
+#define NV_ESC_RM_CONTROL 0xc020462aULL
+#define NV01_ROOT_CLIENT 0x00000001
+#define NV2080_DEVICE 0x20800100UL // 示例，可根据 GPU 换
+
+static kAFL_payload *my_kafl_agent_init(int verbose) {
+    harness_log("Entering my_kafl_agent_init().");
+    host_config_t host_cfg;
+    memset(&host_cfg, 0, sizeof(host_cfg));
+    harness_log("Requesting host config via HYPERCALL_KAFL_GET_HOST_CONFIG.");
+    kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (uintptr_t)&host_cfg);
+    harness_log("Host config received: magic=0x%x, version=0x%x.", host_cfg.host_magic, host_cfg.host_version);
+    if (verbose) {
+        hprintf("[agent_init] host_magic=0x%x host_version=0x%x bitmap_size=%u payload_buffer_size=%u worker_id=%u\n",
+                host_cfg.host_magic, host_cfg.host_version, host_cfg.bitmap_size,
+                host_cfg.payload_buffer_size, host_cfg.worker_id);
+    }
+
+    if (host_cfg.host_magic != NYX_HOST_MAGIC) {
+        harness_log("FATAL: HOST_MAGIC mismatch!");
+        habort("HOST_MAGIC mismatch (incompatible host/agent)");
+        return NULL;
+    }
+
+    agent_config_t agent_cfg;
+    memset(&agent_cfg, 0, sizeof(agent_cfg));
+    agent_cfg.agent_magic = NYX_AGENT_MAGIC;
+    agent_cfg.agent_version = NYX_AGENT_VERSION;
+    agent_cfg.input_buffer_size = 0;
+    agent_cfg.agent_non_reload_mode = 1;
+    agent_cfg.agent_tracing = 0;
+    agent_cfg.trace_buffer_vaddr = 0;
+    agent_cfg.coverage_bitmap_size = 0;
+    harness_log("Submitting agent config: non_reload_mode=1, agent_tracing=0.");
+    kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (uintptr_t)&agent_cfg);
+    harness_log("Agent config submitted.");
+
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (page_size <= 0) page_size = 4096;
+    size_t num_pages = (host_cfg.payload_buffer_size + page_size - 1) / page_size;
+    if (num_pages == 0) num_pages = 1;
+    harness_log("Allocating resident pages for payload buffer.");
+    void *buf = malloc_resident_pages(num_pages);
+    if (!buf) {
+        harness_log("FATAL: malloc_resident_pages failed.");
+        habort("malloc_resident_pages failed");
+        return NULL;
+    }
+    harness_log("Payload buffer allocated at %p.", buf);
+
+    memset(buf, 0, num_pages * page_size);
+
+    harness_log("Registering payload buffer via HYPERCALL_KAFL_GET_PAYLOAD.");
+    kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (uintptr_t)buf);
+    harness_log("Payload buffer registered.");
+    if (verbose) {
+        hprintf("[agent_init] allocated payload buffer at %p (%zu pages, %zu bytes)\n",
+                buf, num_pages, num_pages * (size_t)page_size);
+    }
+    harness_log("Leaving my_kafl_agent_init().");
+    return (kAFL_payload *)buf;
+}
+
+static void submit_gsp_ranges(void) {
+    harness_log("Entering submit_gsp_ranges().");
+    FILE *fp;
+    char line[128];
+    uint64_t text_base = 0;
+    int range_count = 0;
+    harness_log("Attempting to open /sys/module/nvidia/sections/.text");
+    fp = fopen("/sys/module/nvidia/sections/.text", "r");
+    if (!fp) {
+        harness_log("WARNING: fopen failed for /sys/module/nvidia/sections/.text. Proceeding without PT filters.");
+        hprintf("[harness] WARNING: Cannot read /sys/module/nvidia/sections/.text. Proceeding without PT filters.\n");
+        return;
+    }
+    harness_log("Successfully opened /sys/module/nvidia/sections/.text");
+
+    if (fscanf(fp, "%" SCNx64, &text_base) != 1) {
+        fclose(fp);
+        harness_log("WARNING: Failed to parse .text base address. Proceeding without PT filters.");
+        hprintf("[harness] WARNING: Failed to parse .text base address. Proceeding without PT filters.\n");
+        return;
+    }
+    fclose(fp);
+    harness_log("Parsed NVIDIA .text base: 0x%" PRIx64, text_base);
+    hprintf("[harness] NVIDIA .text base: 0x%" PRIx64 "\n", text_base);
+
+    harness_log("Attempting to open /sharedir/nv_gsp_ranges.rel");
+    fp = fopen("/sharedir/nv_gsp_ranges.rel", "r");
+    if (!fp) {
+        harness_log("WARNING: Cannot open /sharedir/nv_gsp_ranges.rel. Proceeding without PT filters.");
+        hprintf("[harness] WARNING: Cannot open /sharedir/nv_gsp_ranges.rel. Proceeding without PT filters.\n");
+        return;
+    }
+    harness_log("Successfully opened /sharedir/nv_gsp_ranges.rel");
+
+    while (fgets(line, sizeof(line), fp) && range_count < MAX_PT_RANGES) {
+        long long start_off, end_off;
+        if (sscanf(line, "+0x%llx-+0x%llx", &start_off, &end_off) == 2) {
+            if (start_off < 0 || end_off < 0) {
+                hprintf("[harness] WARNING: Negative offset skipped: +0x%llx - +0x%llx\n", start_off, end_off);
+                continue;
+            }
+            uint64_t abs_start = text_base + (uint64_t)start_off;
+            uint64_t abs_end = text_base + (uint64_t)end_off;
+            if (abs_start >= abs_end) {
+                hprintf("[harness] WARNING: Invalid range skipped (start >= end)\n");
+                continue;
+            }
+            uint64_t range_submission[3] = {abs_start, abs_end, (uint64_t)range_count};
+
+            harness_log("Submitting range[%d]: 0x%" PRIx64 " - 0x%" PRIx64, range_count, abs_start, abs_end);
+            kAFL_hypercall(HYPERCALL_KAFL_RANGE_SUBMIT, (uintptr_t)range_submission);
+
+            hprintf("[harness] Submitted PT range[%d]: 0x%" PRIx64 " - 0x%" PRIx64 "\n", range_count, abs_start, abs_end);
+            range_count++;
+        }
+    }
+    fclose(fp);
+    if (range_count > 0) {
+        harness_log("Finished processing ranges file. Total submitted: %d.", range_count);
+    } else {
+        harness_log("No valid ranges found in /sharedir/nv_gsp_ranges.rel.");
+    }
+}
+
+int main(int argc, char **argv) {
+    (void)argc; (void)argv;
+    // 清空旧日志，开始新的会话
+    if (remove("/var/log/nvidia_harness.log") != 0 && errno != ENOENT) {
+        hprintf("[harness] WARNING: Failed to remove old /var/log/nvidia_harness.log (errno=%d).\n", errno);
+    }
+    if (remove("/tmp/nvidia_harness.log") != 0 && errno != ENOENT) {
+        hprintf("[harness] WARNING: Failed to remove old /tmp/nvidia_harness.log (errno=%d).\n", errno);
+    }
+    harness_log("Harness main() started.");
+    hprintf("[harness] main() has been started.\n");
+    harness_log("Calling my_kafl_agent_init().");
+    kAFL_payload *payload = my_kafl_agent_init(1);
+    if (!payload) {
+        harness_log("FATAL: my_kafl_agent_init() returned NULL.");
+        return 1;
+    }
+    harness_log("my_kafl_agent_init() successful.");
+    
+
+    harness_log("Calling submit_gsp_ranges().");
+    submit_gsp_ranges();
+    harness_log("submit_gsp_ranges() successful.");
+    harness_log("Attempting to open /dev/nvidiactl...");
+    int fd = -1;
+    const int max_tries = 60;
+    int tries = 0;
+    while (tries < max_tries) {
+        fd = open("/dev/nvidiactl", O_RDWR | O_CLOEXEC);
+        if (fd >= 0) break;
+        tries++;
+        hprintf("[nvidia_harness] waiting for /dev/nvidiactl (attempt %d) errno=%d\n", tries, errno);
+        sleep(1);
+    }
+    if (fd < 0) {
+        harness_log("FATAL: Failed to open /dev/nvidiactl after %d tries.", max_tries);
+        habort("Failed to open /dev/nvidiactl");
+        return 2;
+    }
+    harness_log("Successfully opened /dev/nvidiactl, fd=%d.", fd);
+    hprintf("[nvidia_harness] opened /dev/nvidiactl fd=%d\n", fd);
+    int r;
+    uint32_t hClient = 0;
+    uint32_t hObject = 0;
+    NVOS64_PARAMETERS alloc = {0};
+    // Root client
+    alloc.hRoot = 0;
+    alloc.hObjectParent = 0;
+    alloc.hClass = NV01_ROOT_CLIENT;
+    alloc.flags = 0;
+    alloc.pRightsRequested = 0;
+    alloc.pAllocParms = 0;
+    // （如果结构体里没有 padding 字段，请不要写它）
+    r = ioctl(fd, (unsigned long)NV_ESC_RM_ALLOC, &alloc);
+    if (r < 0 || alloc.status != 0 || alloc.hObjectNew == 0) {
+        harness_log("FATAL: Alloc root failed: ret=%d status=0x%x hObjectNew=0x%x errno=%d", r, alloc.status, alloc.hObjectNew, (r < 0 ? errno : 0));
+        close(fd);
+        habort("Failed to alloc hClient");
+        return 3;
+    }
+    hClient = alloc.hObjectNew;
+    harness_log("Allocated hClient (root): 0x%x", hClient);
+    // ---- Alloc device with retry and flags adjustment ----
+    int try_count = 0;
+    NVOS64_PARAMETERS dev_alloc; // 在循环外定义，避免遮蔽
+    memset(&dev_alloc, 0, sizeof(dev_alloc));
+    for (try_count = 0; try_count < 3; try_count++) {
+        memset(&dev_alloc, 0, sizeof(dev_alloc));  // 每轮完整清零
+        dev_alloc.hRoot = hClient;
+        dev_alloc.hObjectParent = hClient;
+        dev_alloc.hClass = NV2080_DEVICE;
+        dev_alloc.flags = (try_count == 0) ? 0x0 : 0x1;  // 0x1: IGNORE_BANK_PLACEMENT（示例）
+        dev_alloc.pRightsRequested = 0;
+        dev_alloc.pAllocParms = 0;
+        harness_log("ALLOC device try %d: sizeof(NVOS64_PARAMETERS)=%zu request=0x%lx class=0x%x",
+                    try_count + 1, sizeof(NVOS64_PARAMETERS), (unsigned long)NV_ESC_RM_ALLOC, dev_alloc.hClass);
+        hprintf("[harness] ALLOC device try %d: request=0x%lx class=0x%x\n",
+                try_count + 1, (unsigned long)NV_ESC_RM_ALLOC, dev_alloc.hClass);
+        r = ioctl(fd, (unsigned long)NV_ESC_RM_ALLOC, &dev_alloc);
+        harness_log("ALLOC device try %d: class=0x%x flags=0x%x ret=%d status=0x%x hObjectNew=0x%x errno=%d",
+                    try_count + 1, dev_alloc.hClass, dev_alloc.flags, r, dev_alloc.status, dev_alloc.hObjectNew, (r < 0 ? errno : 0));
+        if (r >= 0 && dev_alloc.status == 0 && dev_alloc.hObjectNew != 0) {
+            break;
+        }
+        if (try_count == 0) usleep(200*1000); else sleep(1);
+    }
+    if (try_count == 3) {
+        harness_log("FATAL: Alloc device failed after 3 tries.");
+        system("dmesg | tail -20 >> /tmp/nvidia_harness.log");  // 捕获 dmesg error 到 log
+        close(fd);
+        habort("Failed to alloc hObject after retries");
+        return 4;
+    }
+    hObject = dev_alloc.hObjectNew;
+    harness_log("Allocated hObject (device): 0x%x", hObject);
+    harness_log("Entering main fuzzing loop.");
+    while (1) {
+        kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
+        kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+        harness_log("Processing payload, size=%zu", payload->size);
+        if (payload->size < SEED_HDR_SIZE) {
+            harness_log("Payload too small: %zu < %zu", payload->size, SEED_HDR_SIZE);
+            goto release_and_continue;
+        }
+        // 解析并校验 24B 头
+        seed_hdr_t hdr;
+        memcpy(&hdr, payload->data, sizeof(hdr));
+        if (sizeof(hdr) != 24) {
+            harness_log("SEED_HDR_SIZE mismatch: sizeof(hdr)=%zu (!=24)", sizeof(hdr));
+            goto release_and_continue;
+        }
+        if (hdr.magic != 0x4E564944) { // "NVID"
+            harness_log("Invalid magic: 0x%x", hdr.magic);
+            goto release_and_continue;  // 立即 RELEASE 丢弃
+        }
+        if (hdr.ret != 0) {
+            harness_log("Invalid ret in header: 0x%x (expect 0)", hdr.ret);
+            goto release_and_continue;
+        }
+        if (hdr.arg_size != payload->size - SEED_HDR_SIZE) {
+            harness_log("Size mismatch: header %u, payload %zu", hdr.arg_size, payload->size - SEED_HDR_SIZE);
+            goto release_and_continue;
+        }
+        // 头 OK
+        uint8_t *seed_data = payload->data + SEED_HDR_SIZE;
+        size_t seed_size = hdr.arg_size;
+        r = -1;
+        if (hdr.request == NV_ESC_RM_CONTROL) { // 0xc020462a
+            if (seed_size > MAX_CONTROL_PAYLOAD_SIZE) {
+                harness_log("CONTROL arg too large: %zu > %u", seed_size, MAX_CONTROL_PAYLOAD_SIZE);
+                goto release_and_continue;
+            }
+            NVOS54_PARAMETERS wrapper = {0};
+            wrapper.hClient = hClient; // 动态
+            wrapper.hObject = hObject; // 动态
+            wrapper.cmd = hdr.subclass; // 从种子
+            wrapper.flags = 0;
+            wrapper.paramsSize = seed_size;
+            wrapper.status = 0;
+            void *userbuf = NULL;
+            if (seed_size > 0) {
+                userbuf = malloc(seed_size);
+                if (!userbuf) {
+                    harness_log("Malloc failed for CONTROL params: %zu", seed_size);
+                    goto release_and_continue;
+                }
+                memcpy(userbuf, seed_data, seed_size);
+                wrapper.params = (uintptr_t)userbuf;
+            } else {
+                wrapper.params = NULL;
+            }
+            r = ioctl(fd, (unsigned long)hdr.request, &wrapper);
+            harness_log("CONTROL ioctl cmd=0x%x ret=%d status=0x%x errno=%d size=%zu",
+                        wrapper.cmd, r, wrapper.status, (r < 0 ? errno : 0), seed_size);
+            if (userbuf) free(userbuf);
+        } else if (hdr.request == NV_ESC_RM_ALLOC) { // 0xc030462b
+            if (seed_size != sizeof(NVOS64_PARAMETERS)) {
+                harness_log("ALLOC size mismatch: expect %zu, got %zu", sizeof(NVOS64_PARAMETERS), seed_size);
+                goto release_and_continue;
+            }
+            NVOS64_PARAMETERS in_seed = {0};
+            memcpy(&in_seed, seed_data, sizeof(in_seed));
+            NVOS64_PARAMETERS wrapper = {0};
+            wrapper.hClass = in_seed.hClass ? in_seed.hClass : hdr.subclass;
+            wrapper.hRoot = hClient;
+            uint32_t class_prefix = wrapper.hClass & 0xFFFF0000u;
+            if (class_prefix == 0x20800000u || class_prefix == 0x00000000u) {
+                wrapper.hObjectParent = hClient;
+            } else if (class_prefix == 0xA0820000u || class_prefix == 0xA0000000u) {
+                wrapper.hObjectParent = hObject;
+            } else {
+                wrapper.hObjectParent = hClient;
+                harness_log("WARNING: Unknown class_prefix 0x%x, using hClient", class_prefix);
+            }
+            wrapper.hObjectNew = 0;
+            wrapper.pRightsRequested = 0;
+            wrapper.pAllocParms = 0;
+            wrapper.flags = in_seed.flags;
+            wrapper.status = 0;
+            r = ioctl(fd, (unsigned long)hdr.request, &wrapper);
+            harness_log("ALLOC ioctl class=0x%x ret=%d status=0x%x errno=%d",
+                        wrapper.hClass, r, wrapper.status, (r < 0 ? errno : 0));
+            if (r >= 0 && wrapper.status == 0 && wrapper.hObjectNew != 0) {
+                hObject = wrapper.hObjectNew;
+                harness_log("Updated hObject to 0x%x", hObject);
+            }
+        } else {
+            harness_log("Unsupported request: 0x%" PRIx64 " size=%zu", hdr.request, seed_size);
+            goto release_and_continue;
+        }
+    release_and_continue:
+        kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+    }
+    close(fd);
+    return 0;
+}

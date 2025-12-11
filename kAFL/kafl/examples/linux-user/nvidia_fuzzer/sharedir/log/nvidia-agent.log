@@ -1,0 +1,40 @@
+[agent] start
+[agent] ensure nvidia devnodes via nvidia-modprobe
+[agent] fallback mknod /dev/nvidiactl /dev/nvidia0
+crw-rw-rw- 1 root root 234,   0 Dec  5 06:35 /dev/nvidia-uvm
+crw-rw-rw- 1 root root 234,   1 Dec  5 06:35 /dev/nvidia-uvm-tools
+crw-rw-rw- 1 root root 195,   0 Dec  5 06:35 /dev/nvidia0
+crw-rw-rw- 1 root root 195, 255 Dec  5 06:35 /dev/nvidiactl
+[agent] ===== Environment Cleanup Begin =====
+[agent] Isolating to multi-user.target...
+[agent] Stopping GPU-related services...
+[agent] Stopping nvidia-powerd...
+[agent] Killing leftover GUI / NVIDIA processes...
+[agent] ===== Checking Environment Cleanliness =====
+[agent] Loaded NVIDIA modules:
+[agent] Processes holding /dev/nvidia* (Expect EMPTY):
+  [OK] No processes using NVIDIA devices.
+[agent] ===== Cleanup Done, Starting Fuzzer =====
+[agent] nv_gsp_ranges.rel found, proceeding
+[agent] waiting READY...
+[agent] READY seen, exec harness
+[agent] start
+[agent] ensure nvidia devnodes via nvidia-modprobe
+[agent] fallback mknod /dev/nvidiactl /dev/nvidia0
+crw-rw-rw- 1 root root 234,   0 Dec  5 07:07 /dev/nvidia-uvm
+crw-rw-rw- 1 root root 234,   1 Dec  5 07:07 /dev/nvidia-uvm-tools
+crw-rw-rw- 1 root root 195,   0 Dec  5 07:07 /dev/nvidia0
+crw-rw-rw- 1 root root 195, 255 Dec  5 07:07 /dev/nvidiactl
+[agent] ===== Environment Cleanup Begin =====
+[agent] Isolating to multi-user.target...
+[agent] Stopping GPU-related services...
+[agent] Stopping nvidia-powerd...
+[agent] Killing leftover GUI / NVIDIA processes...
+[agent] ===== Checking Environment Cleanliness =====
+[agent] Loaded NVIDIA modules:
+[agent] Processes holding /dev/nvidia* (Expect EMPTY):
+  [OK] No processes using NVIDIA devices.
+[agent] ===== Cleanup Done, Starting Fuzzer =====
+[agent] nv_gsp_ranges.rel found, proceeding
+[agent] waiting READY...
+[agent] READY seen, exec harness

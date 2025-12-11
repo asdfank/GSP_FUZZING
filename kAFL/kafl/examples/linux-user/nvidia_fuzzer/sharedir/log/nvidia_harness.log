@@ -1,0 +1,23 @@
+[2025-12-05T07:07:53Z] Harness main() started.
+[2025-12-05T07:07:53Z] Calling my_kafl_agent_init().
+[2025-12-05T07:07:53Z] Entering my_kafl_agent_init().
+[2025-12-05T07:07:53Z] Requesting host config via HYPERCALL_KAFL_GET_HOST_CONFIG.
+[2025-12-05T07:07:53Z] Host config received: magic=0x4878794e, version=0x2.
+[2025-12-05T07:07:53Z] Submitting agent config: non_reload_mode=1, agent_tracing=0.
+[2025-12-05T07:07:53Z] Agent config submitted.
+[2025-12-05T07:07:53Z] Allocating resident pages for payload buffer.
+[2025-12-05T07:07:53Z] Payload buffer allocated at 0x559511635000.
+[2025-12-05T07:07:53Z] Registering payload buffer via HYPERCALL_KAFL_GET_PAYLOAD.
+[2025-12-05T07:07:53Z] Payload buffer registered.
+[2025-12-05T07:07:53Z] Leaving my_kafl_agent_init().
+[2025-12-05T07:07:53Z] my_kafl_agent_init() successful.
+[2025-12-05T07:07:53Z] Calling submit_gsp_ranges().
+[2025-12-05T07:07:53Z] Entering submit_gsp_ranges() - FULL MODULE MODE.
+[2025-12-05T07:07:53Z] Attempting to open /sys/module/nvidia/sections/.text
+[2025-12-05T07:07:53Z] Attempting to open /sys/module/nvidia/coresize
+[2025-12-05T07:07:53Z] Submitting FULL MODULE range: 0xffffffffc0889000 - 0xffffffffc6c92000
+[2025-12-05T07:07:53Z] submit_gsp_ranges() successful.
+[2025-12-05T07:07:53Z] Triggering PT CR3 Hack via HYPERCALL_KAFL_SUBMIT_CR3(0)...
+[2025-12-05T07:07:53Z] Initializing GSP NVML workload (gsp_workload_init)...
+[2025-12-05T07:07:54Z] gsp_workload_init() successful.
+[2025-12-05T07:07:54Z] Entering main fuzzing loop.

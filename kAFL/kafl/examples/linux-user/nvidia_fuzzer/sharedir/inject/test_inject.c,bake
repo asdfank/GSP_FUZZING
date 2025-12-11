@@ -1,0 +1,172 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <inttypes.h> // 为 PRIx64 等
+#include <assert.h> // 为 _Static_assert
+
+// CONTROL: 32B (与 0xc020462a 对齐)
+typedef struct {
+    uint32_t hClient;
+    uint32_t hObject;
+    uint32_t cmd;
+    uint32_t flags;
+    uintptr_t params; // 8B
+    uint32_t paramsSize; // 4B
+    uint32_t status; // 4B
+} NVOS54_PARAMETERS;
+_Static_assert(sizeof(NVOS54_PARAMETERS) == 32, "NVOS54 size mismatch");
+
+// ALLOC: 48B (与 0xc030462b 对齐，基于 gVisor NVOS64 + padding)
+typedef struct {
+    uint32_t hRoot;
+    uint32_t hObjectParent;
+    uint32_t hObjectNew;
+    uint32_t hClass;
+    uint64_t pRightsRequested; // 8B
+    uint64_t pAllocParms; // 8B
+    uint32_t flags;
+    uint32_t status;
+    uint64_t padding; // 8B padding 到 48B (如果内核有对齐需求)
+} NVOS64_PARAMETERS;
+_Static_assert(sizeof(NVOS64_PARAMETERS) == 48, "NVOS64 size mismatch");
+
+// ALLOC 字段偏移宏 (基于典型布局，按字节；从你的 harness 确认)
+#define OFF_HROOT           0
+#define OFF_HOBJECTPARENT   4
+#define OFF_HOBJECTNEW      8
+#define OFF_HCLASS          12
+#define OFF_PRIGHTSREQUESTED 16 // 8B
+#define OFF_PALLOCParms     24 // 8B
+#define OFF_FLAGS           32
+#define OFF_STATUS          36
+#define OFF_PADDING         40 // 8B
+
+#define NV_ESC_RM_ALLOC 0xc030462bULL // unsigned long
+#define NV_ESC_RM_CONTROL 0xc020462aULL // unsigned long
+#define NV01_ROOT_CLIENT 0x00000001
+#define NV2080_DEVICE 0x20800100UL // 示例
+
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Usage: %s <seed_file>\n", argv[0]);
+        return 1;
+    }
+    // 读取 seed
+    FILE *f = fopen(argv[1], "rb");
+    if (!f) { perror("fopen seed"); return 1; }
+    fseek(f, 0, SEEK_END);
+    size_t size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t *data = malloc(size ? size : 1);
+    if (!data) { fclose(f); return 1; }
+    fread(data, 1, size, f);
+    fclose(f);
+    printf("Loaded seed: %zu bytes\n", size);
+    if (size < 24) { printf("Seed too small\n"); free(data); return 0; }
+    // 安全解析24B头 (用 memcpy 防未对齐 UB)
+    uint32_t magic, ret, subclass, arg_size;
+    uint64_t request;
+    memcpy(&magic, data + 0, sizeof(uint32_t));
+    memcpy(&request, data + 4, sizeof(uint64_t));
+    memcpy(&ret, data + 12, sizeof(uint32_t));
+    memcpy(&subclass, data + 16, sizeof(uint32_t));
+    memcpy(&arg_size, data + 20, sizeof(uint32_t));
+    uint8_t *params_data = data + 24;
+    if (magic != 0x4E564944) { printf("Invalid magic: 0x%" PRIx32 "\n", magic); free(data); return 6; }
+    if (ret != 0) { printf("Invalid ret: 0x%" PRIx32 " (expect 0)\n", ret); free(data); return 7; }
+    if (arg_size != size - 24) { printf("Size mismatch: header %" PRIu32 ", file %zu\n", arg_size, size - 24); free(data); return 8; }
+    if (arg_size > 1048576) { printf("Arg too large: %" PRIu32 " (>1MB)\n", arg_size); free(data); return 9; } // 防 OOM
+    int fd = open("/dev/nvidiactl", O_RDWR | O_CLOEXEC);
+    if (fd < 0) { perror("open /dev/nvidiactl"); free(data); return 2; }
+    // Alloc root client
+    NVOS64_PARAMETERS alloc = {0}; // 用 48B wrapper
+    alloc.hRoot = 0;
+    alloc.hObjectParent = 0;
+    alloc.hClass = NV01_ROOT_CLIENT;
+    alloc.flags = 0; // 示例
+    alloc.pRightsRequested = 0; // 示例
+    alloc.pAllocParms = 0; // 示例
+    int r = ioctl(fd, (unsigned long)NV_ESC_RM_ALLOC, &alloc);
+    if (r < 0 || alloc.status != 0) {
+        printf("Alloc root failed: ret=%d errno=%d status=0x%" PRIx32 "\n", r, errno, alloc.status);
+        close(fd); free(data); return 3;
+    }
+    uint32_t hClient = alloc.hObjectNew;
+    printf("Allocated hClient: 0x%" PRIx32 " (status=0x%" PRIx32 ", errno=%d)\n", hClient, alloc.status, errno);
+    if (hClient == 0) {
+        printf("WARNING: hClient is 0 (invalid)!\n");
+    }
+    // Alloc device
+    alloc.hRoot = hClient;
+    alloc.hObjectParent = hClient;
+    alloc.hClass = NV2080_DEVICE;
+    r = ioctl(fd, (unsigned long)NV_ESC_RM_ALLOC, &alloc);
+    if (r < 0 || alloc.status != 0) {
+        printf("Alloc device failed: ret=%d errno=%d status=0x%" PRIx32 "\n", r, errno, alloc.status);
+        close(fd); free(data); return 4;
+    }
+    uint32_t hObject = alloc.hObjectNew;
+    printf("Allocated hObject: 0x%" PRIx32 " (status=0x%" PRIx32 ", errno=%d)\n", hObject, alloc.status, errno);
+    if (hObject == 0) {
+        printf("WARNING: hObject is 0 (invalid)!\n");
+    }
+    printf("Request=0x%" PRIx64 ", subclass=0x%" PRIx32 ", params_size=%" PRIu32 "\n", request, subclass, arg_size);
+    // Hex dump 前 64B params (调试)
+    printf("Params hex (first 64B): ");
+    for (size_t i = 0; i < 64 && i < arg_size; i++) printf("%02x ", params_data[i]);
+    printf("\n");
+    if (request == NV_ESC_RM_CONTROL) {
+        NVOS54_PARAMETERS wrapper = {0};
+        wrapper.hClient = hClient;
+        wrapper.hObject = hObject;
+        wrapper.cmd = subclass; // 从头取
+        wrapper.flags = 0;
+        void *userbuf = NULL;
+        if (arg_size) {
+            userbuf = malloc(arg_size);
+            if (!userbuf) { perror("malloc userbuf"); close(fd); free(data); return 5; }
+            memcpy(userbuf, params_data, arg_size);
+            wrapper.params = (uintptr_t)userbuf;
+            wrapper.paramsSize = arg_size;
+        }
+        r = ioctl(fd, (unsigned long)request, &wrapper);
+        printf("ioctl ret=%d errno=%d status=0x%" PRIx32 "\n", r, errno, wrapper.status);
+        printf("Result: %s\n", (r == 0 && wrapper.status == 0) ? "success" : "fail");
+        if (userbuf) free(userbuf);
+    } else if (request == NV_ESC_RM_ALLOC) {
+        if (arg_size != sizeof(NVOS64_PARAMETERS)) {
+            printf("ALLOC arg_size mismatch: expect 48, got %" PRIu32 "\n", arg_size);
+            close(fd); free(data); return 9;
+        }
+        NVOS64_PARAMETERS wrapper = {0};
+        // 逐字段填写 (防布局不完全匹配；基于 OFF_宏，按你的 harness 偏移调整)
+        memcpy(&wrapper.hRoot, params_data + OFF_HROOT, sizeof(uint32_t));
+        memcpy(&wrapper.hObjectParent, params_data + OFF_HOBJECTPARENT, sizeof(uint32_t));
+        memcpy(&wrapper.hObjectNew, params_data + OFF_HOBJECTNEW, sizeof(uint32_t));
+        memcpy(&wrapper.hClass, params_data + OFF_HCLASS, sizeof(uint32_t));
+        memcpy(&wrapper.pRightsRequested, params_data + OFF_PRIGHTSREQUESTED, sizeof(uint64_t));
+        memcpy(&wrapper.pAllocParms, params_data + OFF_PALLOCParms, sizeof(uint64_t));
+        memcpy(&wrapper.flags, params_data + OFF_FLAGS, sizeof(uint32_t));
+        memcpy(&wrapper.status, params_data + OFF_STATUS, sizeof(uint32_t));
+        memcpy(&wrapper.padding, params_data + OFF_PADDING, sizeof(uint64_t));
+        r = ioctl(fd, (unsigned long)request, &wrapper);
+        printf("ALLOC ioctl ret=%d errno=%d status=0x%" PRIx32 "\n", r, errno, wrapper.status);
+        printf("Result: %s\n", (r == 0 && wrapper.status == 0) ? "success" : "fail");
+    } else {
+        printf("Unsupported request: 0x%" PRIx64 "\n", request);
+        printf("Result: fail\n");
+    }
+    // 添加 dmesg tail 检查 error
+    printf("\n--- dmesg tail ---\n");
+    system("dmesg | tail -10");
+    close(fd);
+    free(data);
+    sleep(1); // 防批量 panic
+    return 0;
+}

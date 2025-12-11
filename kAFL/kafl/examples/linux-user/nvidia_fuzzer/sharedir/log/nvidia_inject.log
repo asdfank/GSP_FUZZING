@@ -1,0 +1,8 @@
+[2025-11-10T08:45:34Z] ========== test_inject_logged start ==========
+[2025-11-10T08:45:34Z] argv[1]=seed='seeds/smi_all_000000.bin' device='/dev/nvidiactl'
+[2025-11-10T08:45:34Z] seed header: request=0xc030462b4e564944 arg_size=0 subclass=0x3000000000
+[2025-11-10T08:45:34Z] seed body hexdump (first 64 bytes):
+[2025-11-10T08:45:34Z] open(/dev/nvidiactl) ok fd=3
+[2025-11-10T08:45:34Z] ALLOC ROOT ret=0 errno=0 status=0x0 hNew=0xc1d00005
+[2025-11-10T08:45:34Z] ALLOC NV2080 ret=0 errno=0 status=0x0 hNew=0x0
+[2025-11-10T08:45:34Z] [ENV_FAIL] alloc NV2080 failed -> exit

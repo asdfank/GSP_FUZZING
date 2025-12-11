@@ -1,0 +1,55 @@
+name: CI
+permissions: {}
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [lint_check, type_check]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: ./.github/actions/common-setup
+
+    - name: Run ${{ matrix.task }}
+      run: make ${{ matrix.task }}
+
+  release:
+    # this job makes an official Github release
+    needs: [check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      upload_url: ${{ steps.step_upload_url.outputs.upload_url }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get the version
+        id: get_version
+        run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
+
+      # only create release if tag start by 'v*'
+      - name: Create a Release
+        id: create_release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          generate_release_notes: true
+          make_latest: true
+        if: startsWith(github.ref, 'refs/tags/v')
+
+      - id: step_upload_url
+        run: echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT

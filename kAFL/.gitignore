@@ -1,0 +1,30 @@
+# IDE
+.vscode/
+ctags
+
+# Python venvs
+/env.sh
+venv/
+.venv/
+
+# Ansible collection artifacts
+*.tar.gz
+
+# kAFL local install dir at repo root
+#/kafl/
+
+
+# 不追踪 QEMU 编译产物（示例，视目录结构调）
+kafl/qemu/x86_64-softmmu/
+kafl/qemu/build/
+kafl/qemu/*.o
+kafl/qemu/*.a
+
+# 不追踪 libxdc 的 build
+kafl/libxdc/build/
+kafl/libxdc/*.a
+kafl/libxdc/*.so
+
+# 不追踪 radamsa 的编译结果
+kafl/radamsa/bin/
+kafl/radamsa/lib/

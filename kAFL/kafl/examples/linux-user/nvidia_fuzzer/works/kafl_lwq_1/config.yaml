@@ -1,0 +1,77 @@
+---
+ABORT_EXEC: 0
+ABORT_TIME: 0.0
+AFL_ARITH_MAX: 34
+AFL_DUMB_MODE: false
+AFL_DUMP_MODE: false
+AFL_NO_EFFECTOR: false
+AFL_SKIP_RANGE: null
+AFL_SKIP_ZERO: false
+BITMAP_SIZE: 65536
+COMMAND: fuzz
+CPU_OFFSET: 0
+DEBUG: true
+DICT: null
+DOT_FILE: null
+FUNKY: false
+GDBSERVER: false
+GRIMOIRE: false
+INPUT: /dev/shm/kafl_lwq
+IP0: null
+IP1: null
+IP2: null
+IP3: null
+ITERATIONS: 5
+KICKSTART: 256
+LOG: false
+LOG_CRASHES: true
+LOG_HPRINTF: true
+PAYLOAD_SIZE: 8192
+PROCESSES: 1
+PTDUMP_PATH: /home/lwq/Desktop/kAFL/kafl/libxdc/build/ptdump_static
+PURGE: true
+QEMU_APPEND: root=/dev/sda1 rw console=ttyS0 oops=panic nopti nokaslr nosmap nosmep
+  intel_iommu=on
+QEMU_APPEND_DEFAULT: nokaslr oops=panic nopti mitigations=off console=ttyS0
+QEMU_BASE: -enable-kvm -machine kAFL64-v1 -cpu kAFL64-Hypervisor-v1,+vmx -no-reboot
+  -net none -display none
+QEMU_BIOS: null
+QEMU_COMMAND: bash -lc 'modprobe 9pnet_virtio 9p || true; mkdir -p /sharedir; mount
+  -t 9p -o trans=virtio sharedir /sharedir; command -v nvidia-modprobe >/dev/null
+  || (apt-get update && apt-get install -y -qq nvidia-modprobe); nvidia-modprobe -u
+  -c=0 || true; chmod +x /sharedir/agent.sh /sharedir/fuzz_nvidia || true; /bin/sh
+  /sharedir/agent.sh'
+QEMU_EXTRA: -device pcie-root-port,id=pcie.1,chassis=1,port=0x10 -device vfio-pci,host=01:00.0,id=gpu0,bus=pcie.1,multifunction=on
+  -device vfio-pci,host=01:00.1,id=gpu0-audio,bus=pcie.1,addr=0x00.1 -netdev user,id=net0,hostfwd=tcp::10022-:22
+  -device virtio-net-pci,netdev=net0 -virtfs local,path=/home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/sharedir,mount_tag=sharedir,security_model=none,readonly=off
+QEMU_IMAGE: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/kafl_guest_prep/ubuntu-nvidia/ubuntu-nvidia.qcow2
+QEMU_INITRD: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/kafl_guest_prep/my-initrd
+QEMU_KERNEL: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/kafl_guest_prep/my-kernel
+QEMU_LOGIN: root@127.0.0.1
+QEMU_MEMORY: 4096
+QEMU_PATH: /home/lwq/Desktop/kAFL/kafl/qemu/x86_64-softmmu/qemu-system-x86_64
+QEMU_PORT: 10022
+QEMU_SERIAL: -device isa-serial,chardev=kafl_serial
+QEMU_SNAPSHOT: null
+QUIET: false
+RADAMSA: false
+RADAMSA_PATH: /home/lwq/Desktop/kAFL/kafl/radamsa/bin/radamsa
+REDQUEEN: false
+REDQUEEN_HAMMER: false
+REDQUEEN_HASHES: false
+REDQUEEN_SIMPLE: false
+RELOAD: 0
+RESUME: false
+ROOT: /home/lwq/Desktop/kAFL/kafl
+SEED_DIR: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/kafl_all_seeds
+SHAREDIR: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/sharedir
+TIMEOUT_CHECK: false
+TIMEOUT_HARD: 4.0
+TIMEOUT_SOFT: 0.001
+TRACE: false
+TRACE_CB: false
+VERBOSE: false
+WORKDIR: /dev/shm/kafl_lwq
+WORKDIR_CONFIG: /dev/shm/kafl_lwq/config.yaml
+WORKDIR_SNAP_STATE_META: /dev/shm/kafl_lwq/snapshot/state.yaml
+WORKSPACE: /home/lwq/Desktop/kAFL

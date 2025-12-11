@@ -1,0 +1,292 @@
+[2025-11-14T02:27:13Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:27:13Z] Allocated hClient: 0xc1d0000b (status=0x0, errno=0)
+
+[2025-11-14T02:27:13Z] Allocated hObject: 0x0 (status=0x0, errno=0)
+
+[2025-11-14T02:27:13Z] WARNING: hObject is 0 (invalid)!
+
+[2025-11-14T02:27:13Z] Request=0xc030462b, subclass=0x0, params_size=48
+
+[2025-11-14T02:27:13Z] Params hex (first 64B): 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 00 
+[2025-11-14T02:27:13Z] 
+
+[2025-11-14T02:27:13Z] ALLOC ioctl ret=0 errno=0 status=0x0
+
+[2025-11-14T02:27:13Z] Result: success
+
+[2025-11-14T02:27:13Z] 
+--- dmesg tail ---
+
+[2025-11-14T02:29:54Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:29:54Z] Allocated hClient: 0xc1d0000d (status=0x0, errno=0)
+
+[2025-11-14T02:29:54Z] Allocated hObject: 0x0 (status=0x0, errno=0)
+
+[2025-11-14T02:29:54Z] WARNING: hObject is 0 (invalid)!
+
+[2025-11-14T02:29:54Z] Request=0xc030462b, subclass=0x0, params_size=48
+
+[2025-11-14T02:29:54Z] Params hex (first 64B): 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 00 
+[2025-11-14T02:29:54Z] 
+
+[2025-11-14T02:29:54Z] ALLOC ioctl ret=0 errno=0 status=0x0
+
+[2025-11-14T02:29:54Z] Result: success
+
+[2025-11-14T02:29:54Z] 
+--- dmesg tail ---
+
+[2025-11-14T02:40:48Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:40:48Z] Alloc root failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T02:40:48Z] WARNING: status not modified by kernel!
+
+[2025-11-14T02:44:00Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:44:00Z] Alloc root failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T02:44:00Z] WARNING: status not modified by kernel!
+
+[2025-11-14T02:58:20Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:58:20Z] Alloc root failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T02:58:43Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:58:43Z] Allocated hClient: 0xc1d0000f (status=0x0, errno=0)
+
+[2025-11-14T02:58:43Z] Alloc device failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T02:58:43Z] WARNING: status not modified by kernel!
+
+[2025-11-14T02:59:55Z] Loaded seed: 72 bytes
+
+[2025-11-14T02:59:55Z] Allocated hClient: 0xc1d00010 (status=0x0, errno=0)
+
+[2025-11-14T02:59:55Z] Alloc device failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T02:59:55Z] WARNING: status not modified by kernel!
+
+[2025-11-14T03:04:01Z] Loaded seed: 72 bytes
+
+[2025-11-14T03:04:01Z] Allocated hClient: 0xc1d00011 (status=0x0, errno=0)
+
+[2025-11-14T03:04:01Z] Alloc device failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T03:04:01Z] WARNING: status not modified by kernel!
+
+[2025-11-14T03:06:32Z] Loaded seed: 72 bytes
+
+[2025-11-14T03:06:32Z] Allocated hClient: 0xc1d00012 (status=0x0, errno=0)
+
+[2025-11-14T03:06:32Z] Alloc device failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T03:06:32Z] WARNING: status not modified by kernel!
+
+[2025-11-14T03:07:55Z] Loaded seed: 72 bytes
+
+[2025-11-14T03:07:55Z] Alloc root failed: ret=0 errno=0 status=0xdeadbeef hNew=0x0
+
+[2025-11-14T03:07:55Z] WARNING: status not modified by kernel!
+
+[2025-11-14T07:39:28Z] Loaded seed: 72 bytes
+
+[2025-11-14T07:39:28Z] Allocated hClient: 0xc1d00013 (status=0x0, errno=0)
+
+[2025-11-14T07:39:28Z] Alloc device failed: ret=0 errno=0 status=0x22 hNew=0x0
+
+[2025-11-14T07:40:17Z] Loaded seed: 280 bytes
+
+[2025-11-14T07:40:17Z] Allocated hClient: 0xc1d00014 (status=0x0, errno=0)
+
+[2025-11-14T07:40:17Z] Alloc device failed: ret=0 errno=0 status=0x22 hNew=0x0
+
+[2025-11-14T07:40:28Z] Loaded seed: 36 bytes
+
+[2025-11-14T07:40:28Z] Allocated hClient: 0xc1d00015 (status=0x0, errno=0)
+
+[2025-11-14T07:40:28Z] Alloc device failed: ret=0 errno=0 status=0x22 hNew=0x0
+
+[2025-11-14T08:47:54Z] Loaded seed: 36 bytes
+
+[2025-11-14T08:47:54Z] Allocated hClient: 0xc1d00020 (status=0x0, errno=0)
+
+[2025-11-14T08:47:54Z] Alloc device failed: ret=0 errno=0 status=0x36 hNew=0x0
+
+[2025-11-17T00:47:37Z] Loaded seed: 5951 bytes
+
+[2025-11-17T00:47:37Z] Invalid magic: 0x3320205b
+
+[2025-11-17T00:48:09Z] Loaded seed: 5905 bytes
+
+[2025-11-17T00:48:09Z] Invalid magic: 0x3320205b
+
+[2025-11-17T00:52:34Z] Loaded seed: 5905 bytes
+
+[2025-11-17T00:52:34Z] Invalid magic: 0x3320205b
+
+[2025-11-17T00:54:31Z] Loaded seed: 72 bytes
+
+[2025-11-17T00:54:31Z] Allocated hClient: 0xc1d00005 (status=0x0, errno=0)
+
+[2025-11-17T00:54:31Z] Alloc device failed: ret=0 errno=0 status=0x36 hNew=0x0
+
+[2025-11-17T00:54:59Z] Loaded seed: 36 bytes
+
+[2025-11-17T00:54:59Z] Allocated hClient: 0xc1d00006 (status=0x0, errno=0)
+
+[2025-11-17T00:54:59Z] Alloc device failed: ret=0 errno=0 status=0x36 hNew=0x0
+
+[2025-11-17T01:32:58Z] Loaded seed: 36 bytes
+
+[2025-11-17T01:32:58Z] Allocated hClient: 0xc1d00007 (status=0x0, errno=0)
+
+[2025-11-17T01:32:58Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T01:33:08Z] Loaded seed: 280 bytes
+
+[2025-11-17T01:33:08Z] Allocated hClient: 0xc1d00008 (status=0x0, errno=0)
+
+[2025-11-17T01:33:08Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T02:48:56Z] Loaded seed: 280 bytes
+
+[2025-11-17T02:48:56Z] Allocated hClient: 0xc1d00009 (status=0x0, errno=0)
+
+[2025-11-17T02:48:56Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T02:49:16Z] Loaded seed: 280 bytes
+
+[2025-11-17T02:49:16Z] Allocated hClient: 0xc1d0000a (status=0x0, errno=0)
+
+[2025-11-17T02:49:16Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T02:49:21Z] Loaded seed: 36 bytes
+
+[2025-11-17T02:49:21Z] Allocated hClient: 0xc1d0000b (status=0x0, errno=0)
+
+[2025-11-17T02:49:21Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T03:06:26Z] Loaded seed: 36 bytes
+
+[2025-11-17T03:06:26Z] Allocated hClient: 0xc1d0000c (status=0x0, errno=0)
+
+[2025-11-17T03:06:26Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T03:06:30Z] Loaded seed: 36 bytes
+
+[2025-11-17T03:06:30Z] Allocated hClient: 0xc1d0000d (status=0x0, errno=0)
+
+[2025-11-17T03:06:30Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-17T03:06:45Z] Loaded seed: 280 bytes
+
+[2025-11-17T03:06:45Z] Allocated hClient: 0xc1d0000e (status=0x0, errno=0)
+
+[2025-11-17T03:06:45Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+
+[2025-11-18T01:37:52Z] Loaded seed: 36 bytes
+
+[2025-11-18T01:37:52Z] Allocated hClient: 0xc1d00019 (status=0x0, errno=0)
+
+[2025-11-18T01:37:52Z] Alloc NV01_DEVICE_0 failed: ret=0 errno=0 status=0x40 hNew=0xcaf00000
+

@@ -1,0 +1,57 @@
+#cloud-config
+hostname: kafl-nvidia-guest
+users:
+  - name: fuzzer
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users,admin,sudo,video,render
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC7YQMx/sdHi5kdKFuYt4nITeDG+J6jwvCOqYaAktvRYs0SDS8CyUXJp7sH4mkEry7xpE3vRBRx/tOkeKWYHkW6dOjgSnQYlRwdsBI0Hws9/aDGEx3EMfetaKUdBPXyn9GHJtVWX3kyftAvt4rmxn9V8SRRdsHzaOsc+wOTk8rqnGvNF9dugE2ch7/8Rm0bTdVSQWOkdMm6O3fMoFr/y4Gmm38nCEZYbzosiC3e1LCOqzh9srq2MRXgK4bzy0UyNlnpgc0j8oX/K+fQbKT4+0g12MV6//u/aPFks5yXJTm6C1DXt8K/7xri0yVfma+ybbBfmeyWU74kfW4wP9/b1rVMzDNbdVauapUuP9gxmglJKJ/B4APhFH3LngAVeDYmcZ2XBaepp+EqIBwdctE9phWa2CgAoJGrb6XX/or0HNkqnXgMCjqYEuywTIe1jwcOcMwOP83iRpIA9L6xkr44zYuCMQpRamWBK38COGcQTwPh3MYh7W2IAS4NtpAfM+v9PlwfKR+vaXywaSp+TsKUJlARZjr+xGtKnKmgFIpoEIVjdfCrRWD1HXRiWMva2Q2tu+xS+iL0NCNRCRcyf5BP0+Yx/Bo2t6E5470h6BMByM3EJh3xnrYFqfmtJvhQXErJvc5xxBnDzGHgwkGCIaV0YgYQAo7nhamWOXLsZHeSW0y/Zw== lwq@lwq-server
+
+package_update: true
+package_upgrade: true
+packages:
+  - dkms
+  - build-essential
+  - linux-headers-generic
+  - openssh-server
+  - wget
+
+write_files:
+  - path: /etc/modprobe.d/blacklist-nouveau.conf
+    permissions: '0644'
+    content: |
+      blacklist nouveau
+      options nouveau modeset=0
+
+  - path: /etc/systemd/system/nvidia-575-install.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Install NVIDIA Driver 575.64.03 (one-shot)
+      After=network-online.target multi-user.target
+      Wants=network-online.target
+      ConditionPathExists=/opt/NVIDIA.run
+      ConditionPathExists=!/var/lib/nvidia-installed-575
+
+      [Service]
+      Type=oneshot
+      ExecStartPre=/usr/bin/apt-get update
+      ExecStartPre=/bin/sh -c '/usr/bin/apt-get -y install dkms build-essential linux-headers-$(uname -r) linux-modules-extra-$(uname -r)'
+      ExecStart=/opt/NVIDIA.run --silent --accept-license --dkms --no-cc-version-check
+      ExecStartPost=/usr/bin/mkdir -p /var/lib
+      ExecStartPost=/usr/bin/touch /var/lib/nvidia-installed-575
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - 'update-initramfs -u || true'
+  - 'wget https://download.nvidia.com/XFree86/Linux-x86_64/575.64.03/NVIDIA-Linux-x86_64-575.64.03.run -O /opt/NVIDIA.run'
+  - 'chmod +x /opt/NVIDIA.run'
+  - 'systemctl enable nvidia-575-install.service'
+
+power_state:
+  mode: reboot
+  message: "Rebooting once to disable nouveau; NVIDIA will be installed on next boot."

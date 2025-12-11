@@ -1,0 +1,45 @@
+- name: Install MinGW GNU C Compiler
+  ansible.builtin.apt:
+    name: gcc-mingw-w64-x86-64
+  become: true
+
+- name: Ensure packer and vagrant are installed
+  become: true
+  block:
+    - name: Ensure packer and vagrant are installed
+      ansible.builtin.include_role:
+        name: robertdebock.hashicorp
+      vars:
+        hashicorp_products:
+          - name: packer
+          - name: vagrant
+
+- name: Install vagrant plugins
+  ansible.builtin.command: vagrant plugin install vagrant-libvirt vagrant-host-shell
+
+- name: Ensure /etc/qemu exists
+  ansible.builtin.file:
+    path: /etc/qemu
+    state: directory
+  become: true
+
+- name: Ensure /etc/qemu/bridge.conf is configured to allow virbr0
+  ansible.builtin.lineinfile:
+    path: /etc/qemu/bridge.conf
+    line: "allow virbr0"
+    mode: 0644
+    group: "{{ ansible_user_id }}"
+    backup: true
+    create: true
+  become: true
+
+- name: Ensure QEMU binaries are available
+  ansible.builtin.package:
+    name: qemu-system-x86
+  become: true
+
+- name: Ensure qemu-bridge-helper is setuid
+  ansible.builtin.file:
+    path: /usr/lib/qemu/qemu-bridge-helper
+    mode: "u+s"
+  become: true

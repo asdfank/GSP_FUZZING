@@ -1,0 +1,11 @@
+sharedir: '@format {env[PWD]}/sharedir'
+
+qemu_image: /home/lwq/Desktop/kAFL/kafl/examples/linux-user/nvidia_fuzzer/kafl_guest_prep/ubuntu-nvidia/ubuntu-nvidia.qcow2
+
+qemu_login: root@127.0.0.1
+qemu_port: 10022
+qemu_command: "bash -lc 'modprobe 9pnet_virtio 9p || true; mkdir -p /sharedir; mount -t 9p -o trans=virtio sharedir /sharedir; command -v nvidia-modprobe >/dev/null || (apt-get update && apt-get install -y -qq nvidia-modprobe); nvidia-modprobe -u -c=0 || true; chmod +x /sharedir/agent.sh /sharedir/fuzz_nvidia || true; /bin/sh /sharedir/agent.sh'"
+
+# 与 harness 中的 PAYLOAD_MAX_SIZE 一致
+payload_size: 8192
+

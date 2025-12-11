@@ -1,0 +1,41 @@
+[  349.767928] audit: type=1400 audit(1762418150.017:75): apparmor="STATUS" operation="profile_replace" info="same as current profile, skipping" profile="unconfined" name="/snap/snapd/25577/usr/lib/snapd/snap-confine" pid=2310 comm="apparmor_parser"
+[  349.767931] audit: type=1400 audit(1762418150.017:76): apparmor="STATUS" operation="profile_replace" info="same as current profile, skipping" profile="unconfined" name="/snap/snapd/25577/usr/lib/snapd/snap-confine//mount-namespace-capture-helper" pid=2310 comm="apparmor_parser"
+[  349.934942] audit: type=1400 audit(1762418150.185:77): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.activate" pid=2312 comm="apparmor_parser"
+[  350.081447] audit: type=1400 audit(1762418150.329:78): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.benchmark" pid=2317 comm="apparmor_parser"
+[  350.247016] audit: type=1400 audit(1762418150.497:79): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.buginfo" pid=2330 comm="apparmor_parser"
+[  350.412311] audit: type=1400 audit(1762418150.661:80): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.check-kernel" pid=2333 comm="apparmor_parser"
+[  350.627488] audit: type=1400 audit(1762418150.877:81): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.daemon" pid=2340 comm="apparmor_parser"
+[  350.832525] audit: type=1400 audit(1762418151.081:82): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.configure" pid=2341 comm="apparmor_parser"
+[  350.933646] audit: type=1400 audit(1762418151.181:83): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.install" pid=2342 comm="apparmor_parser"
+[  351.052122] audit: type=1400 audit(1762418151.301:84): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.remove" pid=2344 comm="apparmor_parser"
+Loaded seed: 48 bytes
+Allocated hClient: 0xc1d00193 (status=0x0, errno=0)
+Allocated hObject: 0xc1d00193 (status=0x0, errno=0)
+Request=0xc020462a, subclass=0x20808546, params_size=24
+Params hex (first 64B): 0f 00 00 00 00 70 00 00 01 00 00 00 80 00 00 00 00 01 00 00 06 00 00 00 
+ioctl ret=0 errno=0 status=0x56
+Result: fail
+
+--- dmesg tail ---
+
+--- dmesg log ---
+[  330.448571] audit: type=1400 audit(1762418130.697:66): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.daemon" pid=2027 comm="apparmor_parser"
+[  330.584217] audit: type=1400 audit(1762418130.833:67): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.configure" pid=2028 comm="apparmor_parser"
+[  330.673627] audit: type=1400 audit(1762418130.921:68): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.install" pid=2029 comm="apparmor_parser"
+[  330.781344] audit: type=1400 audit(1762418131.029:69): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.remove" pid=2030 comm="apparmor_parser"
+[  330.891046] audit: type=1400 audit(1762418131.141:70): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.lxc" pid=2031 comm="apparmor_parser"
+[  330.996665] audit: type=1400 audit(1762418131.245:71): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.lxc-to-lxd" pid=2032 comm="apparmor_parser"
+[  331.103531] audit: type=1400 audit(1762418131.353:72): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.lxd" pid=2033 comm="apparmor_parser"
+[  339.298715] loop1: detected capacity change from 0 to 130608
+[  348.889672] loop5: detected capacity change from 0 to 187192
+[  349.767927] kauditd_printk_skb: 2 callbacks suppressed
+[  349.767928] audit: type=1400 audit(1762418150.017:75): apparmor="STATUS" operation="profile_replace" info="same as current profile, skipping" profile="unconfined" name="/snap/snapd/25577/usr/lib/snapd/snap-confine" pid=2310 comm="apparmor_parser"
+[  349.767931] audit: type=1400 audit(1762418150.017:76): apparmor="STATUS" operation="profile_replace" info="same as current profile, skipping" profile="unconfined" name="/snap/snapd/25577/usr/lib/snapd/snap-confine//mount-namespace-capture-helper" pid=2310 comm="apparmor_parser"
+[  349.934942] audit: type=1400 audit(1762418150.185:77): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.activate" pid=2312 comm="apparmor_parser"
+[  350.081447] audit: type=1400 audit(1762418150.329:78): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.benchmark" pid=2317 comm="apparmor_parser"
+[  350.247016] audit: type=1400 audit(1762418150.497:79): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.buginfo" pid=2330 comm="apparmor_parser"
+[  350.412311] audit: type=1400 audit(1762418150.661:80): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.check-kernel" pid=2333 comm="apparmor_parser"
+[  350.627488] audit: type=1400 audit(1762418150.877:81): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.daemon" pid=2340 comm="apparmor_parser"
+[  350.832525] audit: type=1400 audit(1762418151.081:82): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.configure" pid=2341 comm="apparmor_parser"
+[  350.933646] audit: type=1400 audit(1762418151.181:83): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.install" pid=2342 comm="apparmor_parser"
+[  351.052122] audit: type=1400 audit(1762418151.301:84): apparmor="STATUS" operation="profile_replace" profile="unconfined" name="snap.lxd.hook.remove" pid=2344 comm="apparmor_parser"
