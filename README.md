@@ -1,76 +1,91 @@
-# GSP_FUZZING
+## Project focus
 
-**GSP_FUZZING** is an experimental open-source fuzzing project based on **kAFL**, focused on enabling **multi-snapshot fuzzing under VFIO device passthrough** and exploring **GPU driver fuzzing**.
+This repository is a research-oriented fuzzing project based on kAFL, with a focus on:
 
-## Overview
+- multi-snapshot fuzzing under VFIO device passthrough,
+- GPU driver fuzzing,
+- hardware-in-the-loop execution models,
+- reproducibility and coverage collection in non-deterministic environments.
 
-This project targets a difficult and underexplored systems-security problem: how to make fuzzing practical and repeatable when the target depends on **VFIO passthrough** and hardware-backed execution paths.
+The project is currently in an experimental stage and is maintained by a single developer.
+## Fuzzing with Hardware-in-the-Loop
 
-The long-term aim is to investigate whether fuzzing infrastructure can better support:
+This project explores fuzzing targets that interact with real hardware during execution. In this model, the device becomes part of the fuzzing loop, which directly affects both coverage collection and snapshot reliability.
 
-- passthrough-backed targets
-- richer snapshot and restore workflows
-- GPU driver attack surfaces
-- more reproducible experiments for low-level security research
+### Core decision: is reset reliable?
 
-## Motivation
+A hardware-in-the-loop fuzzing setup depends heavily on whether the device can be reset into a known-good state between test cases.
 
-Snapshot-based fuzzing works well for many VM-based targets, but device passthrough introduces new challenges:
+A reset is considered reliable when:
 
-- restoring clean execution state is harder
-- device state may not reset like ordinary guest memory
-- reproducibility becomes more fragile
-- driver-facing attack surfaces are complex and stateful
+- the device and driver return to a known-good state,
+- the same test case produces the same observable behavior and coverage,
+- the device consistently accepts new work without timeout storms or persistent error states.
 
-This repository exists to explore these problems in a practical way.
+For large stateful devices such as GPUs, this assumption is often hard to satisfy. Significant internal micro-architectural state may survive an ordinary device reset. In practice, some setups may require a full platform reboot to recover a truly clean baseline.
 
-## Project goals
+### If reset is reliable: snapshots are possible
 
-- Study **multi-snapshot fuzzing** designs for **VFIO passthrough**
-- Extend or adapt **kAFL-style workflows** to hardware-assisted targets
-- Explore **GPU driver fuzzing** as a real-world use case
-- Build a reusable foundation for future systems-security experiments
+If the device can be restored to a known-good state between inputs, snapshot-based fuzzing remains possible. Two snapshot placements are especially relevant:
 
-## Repository layout
+#### 1. Pre-init snapshot
 
-Current top-level directories include:
+In this model, the snapshot is taken before driver initialization.
 
-- `kAFL/`
-- `gvisor/`
+- Restore to a pre-driver state
+- Re-run device enumeration and driver initialization on every iteration
+- Execute the harness and test case
+- Return to the snapshot
 
-The codebase currently spans multiple languages, including **C, Go, C++, and Python**, consistent with low-level fuzzing, systems tooling, and infrastructure work.
+This approach is slower, but often more robust for complex devices because it avoids carrying partially-initialized driver or device state across iterations.
 
-## Status
+#### 2. Post-init snapshot
 
-This is an **early-stage**, **solo-maintained**, and **research-oriented** project.
+In this model, the snapshot is taken after driver initialization has completed.
 
-The project is still evolving, and documentation, workflow details, and implementation structure will continue to change as experiments progress.
+- Restore to a post-init guest state
+- Reset the device
+- Re-establish configured state
+- Execute the harness and test case
+- Return to the snapshot for the next input
 
-## Intended audience
+This approach keeps expensive vendor driver initialization out of the hot loop, improving iteration speed. However, it only works if device and driver state can be reset and re-armed in a cheaper and deterministic way.
 
-This repository is mainly intended for:
+### If reset is unreliable: disable snapshots
 
-- security researchers
-- fuzzing practitioners
-- kernel / driver researchers
-- virtualization and passthrough security developers
-- people studying advanced VM-based fuzzing workflows
+If reliable reset is not possible, fuzzing can still proceed by disabling snapshot mode entirely. This is closer to a syzkaller-style campaign:
 
-## Roadmap
+- no reset between inputs,
+- high throughput,
+- unavoidable state drift,
+- reduced determinism.
 
-Planned improvements include:
+This mode may still be useful, but it introduces additional challenges for both coverage and triage.
 
-- clearer architecture documentation
-- setup instructions
-- experiment notes and limitations
-- GPU-driver-focused case studies
-- crash triage and result analysis tooling
-- better reproducibility for fuzzing experiments
+### Coverage collection considerations
 
-## Acknowledgments
+Without snapshotting, guest memory state drifts over time. Intel PT depends on a relatively stable guest memory layout and page-cache-based decoding assumptions. In a drifting, non-snapshot system, PT decoding may stall or miss execution, making coverage much less reliable.
 
-This work is inspired by and builds on the ideas behind **kAFL** and related fuzzing research.
+When possible, software instrumentation such as KCOV should be treated as the authoritative coverage source, while PT should be considered best-effort only.
 
-## License
+### Non-determinism and feedback noise
 
-See the repository and upstream component license files for details.
+With real hardware in the loop, the system must be treated as non-deterministic.
+
+A major failure mode is that the device or driver enters a broken state and starts returning errors for all subsequent inputs. When that happens:
+
+- coverage may stop changing,
+- inputs may appear uninteresting and get discarded,
+- the original crashing or hanging input may fail replay validation because execution now follows a different path.
+
+This makes triage and reproducibility substantially harder than in ordinary snapshot-driven fuzzing.
+
+### DMA caveat
+
+DMA is asynchronous. A test case may submit DMA work that completes later, meaning memory writes from one iteration can land during the next iteration and contaminate feedback.
+
+Before accepting the next input, the system should ensure that all outstanding DMA activity has quiesced, or that reset and re-arming are strong enough to prevent DMA completion from leaking across iterations.
+
+### Why this matters for this repository
+
+The long-term goal of this project is to understand how kAFL-style fuzzing workflows can be adapted for VFIO passthrough and GPU-driver-related targets, where reset reliability, snapshot placement, coverage collection, and reproducibility become central engineering and security challenges.
